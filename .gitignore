@@ -4,3 +4,5 @@
 /.vs
 /bin
 /obj
+/LL2Json.csproj.user
+/Properties/PublishProfiles/FolderProfile.pubxml.user

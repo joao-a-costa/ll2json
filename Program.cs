@@ -9,6 +9,21 @@ class Program
 {
     static int Main(string[] args)
     {
+        bool interactive = args.Length == 0;
+        int exitCode = RunConverter(args);
+
+        if (interactive)
+        {
+            AnsiConsole.WriteLine();
+            AnsiConsole.MarkupLine("[dim]Press any key to exit...[/]");
+            Console.ReadKey(true);
+        }
+
+        return exitCode;
+    }
+
+    static int RunConverter(string[] args)
+    {
         try
         {
             // Initialize services
@@ -71,7 +86,6 @@ class Program
             logger.BlankLine();
             logger.Info($"Log file: {logFilePath}");
 
-            // Exit gracefully (don't block on ReadKey - works better for scripting/CI)
             return summary.FailureCount == 0 ? AppConstants.EXIT_SUCCESS : AppConstants.EXIT_ERROR;
         }
         catch (PathValidationException ex)
