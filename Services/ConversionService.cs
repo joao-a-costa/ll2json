@@ -36,13 +36,19 @@ public class ConversionService : IDisposable
 
         try
         {
+            _logger.Info($"Starting conversion: {request.SourcePath}");
+
             // Validate input
+            _logger.Info("Validating source file path...");
             _pathValidator.ValidateFullPath(request.SourcePath);
+            _logger.Info("Source file path validated.");
 
             // Determine output path
             var outputDirectory = request.OutputDirectory ?? Path.GetDirectoryName(request.SourcePath) ?? ".";
             var fileName = Path.GetFileNameWithoutExtension(request.SourcePath);
             var outputPath = Path.Combine(outputDirectory, $"{fileName}.json");
+            _logger.Info($"Output directory: {outputDirectory}");
+            _logger.Info($"Output path: {outputPath}");
 
             // Handle collision
             if (File.Exists(outputPath) && !request.Overwrite)
@@ -55,11 +61,22 @@ public class ConversionService : IDisposable
             // Show progress
             if (request.ShowProgress)
             {
-                AnsiConsole.MarkupLine($"[dim]Converting: {Path.GetFileName(request.SourcePath)}...[/]");
+                AnsiConsole.MarkupLine($"[dim]Converting: {Markup.Escape(Path.GetFileName(request.SourcePath))}...[/]");
             }
 
             // Perform conversion
-            using var projectConverter = new ProjectConverter();
+            _logger.Info("Initializing ProjectConverter...");
+            ProjectConversionResult? lastResult = null;
+            using var projectConverter = new ProjectConverter
+            {
+                Progress = new SyncProgress<ProjectConversionResult>(r =>
+                {
+                    lastResult = r;
+                    var status = r.IsSuccessful ? "Success" : "Failed";
+                    var detail = string.IsNullOrEmpty(r.ErrorMessage) ? "" : $" - {r.ErrorMessage}";
+                    _logger.Info($"Conversion progress [{Path.GetFileName(r.ProjectIdentifier)}]: {status}{detail}");
+                })
+            };
             var options = new ProjectConversionOptions
             {
                 DestinationDirectory = outputDirectory,
@@ -71,9 +88,19 @@ public class ConversionService : IDisposable
                 ImportData = "ProjectConverter"
             };
 
+            _logger.Info("Running List & Label project conversion...");
             projectConverter.ConvertProjectsAndWriteToFile(new[] { request.SourcePath }, options);
+            _logger.Info("Conversion call completed.");
+
+            if (lastResult != null && !lastResult.IsSuccessful)
+            {
+                throw new ConversionFailedException(
+                    $"List & Label reported a conversion failure: {lastResult.ErrorMessage}",
+                    request.SourcePath);
+            }
 
             // Verify output
+            _logger.Info("Verifying output file was written...");
             if (!File.Exists(outputPath))
             {
                 throw new ConversionFailedException(
@@ -133,6 +160,8 @@ public class ConversionService : IDisposable
 
             foreach (var request in requestList)
             {
+                _logger.Info($"Processing file {summary.Results.Count + 1} of {requestList.Count}: {Path.GetFileName(request.SourcePath)}");
+
                 var result = Convert(request);
                 summary.Results.Add(result);
 
@@ -151,6 +180,8 @@ public class ConversionService : IDisposable
             }
         });
 
+        _logger.Info($"Batch processing complete: {summary.SuccessCount} succeeded, {summary.FailureCount} failed.");
+
         return summary;
     }
 
@@ -158,6 +189,17 @@ public class ConversionService : IDisposable
     {
         if (_disposed)
             throw new ObjectDisposedException(GetType().Name);
+    }
+
+    /// <summary>
+    /// Invokes the callback synchronously, unlike System.Progress&lt;T&gt; which posts
+    /// through the captured SynchronizationContext and can run after the caller returns.
+    /// </summary>
+    private sealed class SyncProgress<T> : IProgress<T>
+    {
+        private readonly Action<T> _callback;
+        public SyncProgress(Action<T> callback) => _callback = callback;
+        public void Report(T value) => _callback(value);
     }
 
     public void Dispose()

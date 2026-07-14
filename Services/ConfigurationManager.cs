@@ -101,7 +101,13 @@ public class ConfigurationManager
         AnsiConsole.WriteLine();
 
         // Source pattern
+#if DEBUG
+        var sourcePath = AnsiConsole.Prompt(
+            new TextPrompt<string>("[yellow]Enter file path or pattern[/] (e.g., C:\\labels\\*.lst):")
+                .DefaultValue(@"C:\projects\ll2json\layoutMuk.lst"));
+#else
         var sourcePath = AnsiConsole.Ask<string>("[yellow]Enter file path or pattern[/] (e.g., C:\\labels\\*.lst):");
+#endif
         if (string.IsNullOrWhiteSpace(sourcePath))
         {
             throw new ConverterException("No file path provided.");

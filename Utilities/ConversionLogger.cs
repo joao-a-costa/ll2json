@@ -22,7 +22,7 @@ public class ConversionLogger : IDisposable
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[yellow]Warning: Could not create log directory: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[yellow]Warning: Could not create log directory: {Markup.Escape(ex.Message)}[/]");
         }
     }
 
@@ -31,9 +31,8 @@ public class ConversionLogger : IDisposable
     /// </summary>
     public void Info(string message)
     {
-        var sanitized = SanitizeMessage(message);
-        AnsiConsole.MarkupLine($"[grey]{sanitized}[/]");
-        WriteToFile(sanitized);
+        AnsiConsole.MarkupLine($"[grey]{Markup.Escape(message)}[/]");
+        WriteToFile(SanitizeMessage(message));
     }
 
     /// <summary>
@@ -41,9 +40,8 @@ public class ConversionLogger : IDisposable
     /// </summary>
     public void Success(string message)
     {
-        var sanitized = SanitizeMessage(message);
-        AnsiConsole.MarkupLine($"[green]✓ {sanitized}[/]");
-        WriteToFile($"✓ {sanitized}");
+        AnsiConsole.MarkupLine($"[green]✓ {Markup.Escape(message)}[/]");
+        WriteToFile($"✓ {SanitizeMessage(message)}");
     }
 
     /// <summary>
@@ -51,9 +49,8 @@ public class ConversionLogger : IDisposable
     /// </summary>
     public void Warning(string message)
     {
-        var sanitized = SanitizeMessage(message);
-        AnsiConsole.MarkupLine($"[yellow]⚠ {sanitized}[/]");
-        WriteToFile($"⚠ {sanitized}");
+        AnsiConsole.MarkupLine($"[yellow]⚠ {Markup.Escape(message)}[/]");
+        WriteToFile($"⚠ {SanitizeMessage(message)}");
     }
 
     /// <summary>
@@ -61,7 +58,7 @@ public class ConversionLogger : IDisposable
     /// </summary>
     public void Error(string message)
     {
-        AnsiConsole.MarkupLine($"[red]✗ {message}[/]");
+        AnsiConsole.MarkupLine($"[red]✗ {Markup.Escape(message)}[/]");
         WriteToFile($"✗ {SanitizeMessage(message)}");
     }
 
@@ -70,12 +67,12 @@ public class ConversionLogger : IDisposable
     /// </summary>
     public void Fatal(string message, Exception? ex = null)
     {
-        AnsiConsole.MarkupLine($"[red bold]FATAL ERROR: {message}[/]");
+        AnsiConsole.MarkupLine($"[red bold]FATAL ERROR: {Markup.Escape(message)}[/]");
         WriteToFile($"FATAL ERROR: {SanitizeMessage(message)}");
 
         if (ex != null)
         {
-            AnsiConsole.MarkupLine($"[red]{ex.GetType().Name}: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[red]{Markup.Escape(ex.GetType().Name)}: {Markup.Escape(ex.Message)}[/]");
             WriteToFile($"{ex.GetType().Name}: {SanitizeMessage(ex.Message)}");
 
             if (!string.IsNullOrEmpty(ex.StackTrace))

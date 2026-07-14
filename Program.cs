@@ -90,22 +90,22 @@ class Program
         }
         catch (PathValidationException ex)
         {
-            AnsiConsole.MarkupLine($"[red]Security Error: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[red]Security Error: {Markup.Escape(ex.Message)}[/]");
             return AppConstants.EXIT_SECURITY_ERROR;
         }
         catch (FileValidationException ex)
         {
-            AnsiConsole.MarkupLine($"[red]Validation Error: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[red]Validation Error: {Markup.Escape(ex.Message)}[/]");
             return AppConstants.EXIT_VALIDATION_ERROR;
         }
         catch (ConverterException ex)
         {
-            AnsiConsole.MarkupLine($"[red]Error: {ex.Message}[/]");
+            AnsiConsole.MarkupLine($"[red]Error: {Markup.Escape(ex.Message)}[/]");
             return ex.ExitCode;
         }
         catch (Exception ex)
         {
-            AnsiConsole.MarkupLine($"[red bold]FATAL ERROR: {ex.GetBaseException().Message}[/]");
+            AnsiConsole.MarkupLine($"[red bold]FATAL ERROR: {Markup.Escape(ex.GetBaseException().Message)}[/]");
             AnsiConsole.WriteException(ex);
             return AppConstants.EXIT_ERROR;
         }
